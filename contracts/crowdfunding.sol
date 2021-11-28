@@ -16,6 +16,7 @@ contract Project {
     }
 
     // State variables
+    uint public projectId;
     address payable public creator;
     uint public amountGoal; // required to reach at least this much, else everyone gets refund
     uint public completeAt;
@@ -58,13 +59,14 @@ contract Project {
 
 
     constructor
-    (
+    (   uint projectID,
         address payable _projectStarter,
         string memory _projectTitle,
         string memory _projectDesc,
         uint _fundRaisingDeadline,
         uint _goalAmount
     ) {
+        projectId = projectID;
         creator = _projectStarter;
         title = _projectTitle;
         description = _projectDesc;
@@ -215,6 +217,7 @@ contract crowdfunding  {
 
     // List of existing projects
     Project[] private projects;
+    uint projectID;
 
 // Event that will be emitted whenever a new project is started
     event ProjectStarted(
@@ -236,8 +239,9 @@ function startProject(
     ) external {
         uint raiseUntil = block.timestamp.add(durationInDays.mul(1 days));
        
-        Project newProject = new Project(payable(msg.sender), title, description, raiseUntil, amountToRaise);
+        Project newProject = new Project( projectID ,payable(msg.sender), title, description, raiseUntil, amountToRaise);
         projects.push(newProject);
+        projectID++;
 
         emit ProjectStarted(
 
@@ -255,6 +259,10 @@ function startProject(
       
     function returnAllProjects() external view returns(Project[] memory){
         return projects;
+    }
+
+    function returnSpecificProject(uint _projectID) public view returns(Project) {
+        return projects[_projectID];
     }
 
 

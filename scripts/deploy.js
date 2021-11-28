@@ -22,6 +22,9 @@ let contract1 = await crowdfunding.startProject("NewProject", "test", 2, 100 )
 
    console.log(txn)
 
+   let txn3 = await crowdfunding.returnSpecificProject(0);
+   console.log(txn3);
+
 }
 
 // We recommend this pattern to be able to use async/await everywhere
