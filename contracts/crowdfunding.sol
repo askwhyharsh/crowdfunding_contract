@@ -160,6 +160,7 @@ contract Project {
     function voteRequest(uint _requestNo) public returns(bool, uint){
         require(contributions[msg.sender] > 0, "you must be a contributor to vote");
         Request storage thisRequest = requests[_requestNo];
+        require(thisRequest.noOfVoter < noOfContributors.div(2));
         require (thisRequest.voters[msg.sender] == false, "you have already voted");
         thisRequest.noOfVoter++;
         thisRequest.voters[msg.sender] = true;
