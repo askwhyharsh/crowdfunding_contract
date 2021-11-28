@@ -199,3 +199,63 @@ contract Project {
         return thisRequest.noOfVoter;
     }
 }
+
+
+
+
+
+// Function to run/execute/create new project and add it to an array list 
+
+
+
+
+
+contract crowdfunding  {
+    using SafeMath for uint256;
+
+    // List of existing projects
+    Project[] private projects;
+
+// Event that will be emitted whenever a new project is started
+    event ProjectStarted(
+        address contractAddress,
+        address projectStarter,
+        string projectTitle,
+        string projectDesc,
+        uint256 deadline,
+        uint256 goalAmount
+    );
+    // Function to start a new project.
+
+
+function startProject(
+        string memory title,
+        string memory description,
+        uint durationInDays,
+        uint amountToRaise
+    ) external {
+        uint raiseUntil = block.timestamp.add(durationInDays.mul(1 days));
+       
+        Project newProject = new Project(payable(msg.sender), title, description, raiseUntil, amountToRaise);
+        projects.push(newProject);
+
+        emit ProjectStarted(
+
+            address(newProject),
+            msg.sender,
+            title,
+            description,
+            raiseUntil,
+            amountToRaise
+        );
+    }        
+
+//   Function to get all projects' contract addresses.
+    //   A list of all projects' contract addreses
+      
+    function returnAllProjects() external view returns(Project[] memory){
+        return projects;
+    }
+
+
+}

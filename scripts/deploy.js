@@ -6,13 +6,20 @@ const hre = require("hardhat");
 
 async function main() {
 
-  const Crowdfunding = await hre.ethers.getContractFactory("Project");
-  const crowdfunding = await Crowdfunding.deploy("0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266", "NewProject", "test", 2, 100 );
+  const Crowdfunding = await hre.ethers.getContractFactory("crowdfunding");
+  const crowdfunding = await Crowdfunding.deploy();
 
   await crowdfunding.deployed();
 
   console.log("Crowdfunding project deployed to:", crowdfunding.address);
-  let txn = await crowdfunding.getDetails();
+  let txn2 = await crowdfunding.returnAllProjects();
+
+  console.log(txn2)
+let contract1 = await crowdfunding.startProject("NewProject", "test", 2, 100 )
+ console.log(contract1);
+ 
+  let txn = await crowdfunding.returnAllProjects();
+
    console.log(txn)
 
 }
