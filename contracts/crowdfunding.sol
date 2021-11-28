@@ -26,6 +26,25 @@ contract Project {
     State public state = State.Fundraising; // initialize on create
     mapping (address => uint) public contributions;
 
+    uint public minimumContribution;
+    // variables for voting of decisions
+
+    uint public noOfContributors;
+    struct Request {
+       
+        string desc; 
+        uint value;
+        address payable receipient; 
+        bool status;
+        uint noOfVoter;
+        mapping (address=>bool) voters;
+    }
+
+    mapping (uint => Request)  public requests;
+    uint public numRequests;
+
+    
+
     // Event that will be emitted whenever funding will be received
     event FundingReceived(address contributor, uint amount, uint currentTotal);
     // Event that will be emitted whenever the project starter has received the funds
@@ -40,28 +59,33 @@ contract Project {
 
     constructor
     (
-        address payable projectStarter,
-        string memory projectTitle,
-        string memory projectDesc,
-        uint fundRaisingDeadline,
-        uint goalAmount
+        address payable _projectStarter,
+        string memory _projectTitle,
+        string memory _projectDesc,
+        uint _fundRaisingDeadline,
+        uint _goalAmount
     ) {
-        creator = projectStarter;
-        title = projectTitle;
-        description = projectDesc;
-        amountGoal = goalAmount;
-        deadline = fundRaisingDeadline;
+        creator = _projectStarter;
+        title = _projectTitle;
+        description = _projectDesc;
+        amountGoal = _goalAmount;
+        deadline = _fundRaisingDeadline;
+        minimumContribution = 1000 wei;
         currentBalance = 0;
     }
 
-    /** Function to fund a certain project.
+    /** Function to fund a project.
       */
-    function contribute() external inState(State.Fundraising) payable {
-        require(msg.sender != creator);
+    function contribute() external inState(State.Fundraising) payable returns(bool){
+        require(msg.sender != creator, "Project creator can't contribute");
+        require(msg.value> minimumContribution, "Minimum Contribution should be 1000 wei");
         contributions[msg.sender] = contributions[msg.sender].add(msg.value);
         currentBalance = currentBalance.add(msg.value);
+        noOfContributors++;
         emit FundingReceived(msg.sender, msg.value, currentBalance);
         checkIfFundingCompleteOrExpired();
+        return true;
+
     }
 
     /**  Function to change the project state depending on conditions.
@@ -69,30 +93,12 @@ contract Project {
     function checkIfFundingCompleteOrExpired() public {
         if (currentBalance >= amountGoal) {
             state = State.Successful;
-            payOut();
+            // payOut();
         } else if (block.timestamp > deadline)  {
             state = State.Expired;
         }
         completeAt = block.timestamp;
     }
-
-    /** Function to give the received funds to project starter.
-      */
-    function payOut() internal inState(State.Successful) returns (bool) {
-        uint256 totalRaised = currentBalance;
-        currentBalance = 0;
-
-        if (creator.send(totalRaised)) {
-            emit CreatorPaid(creator);
-            return true;
-        } else {
-            currentBalance = totalRaised;
-            state = State.Successful;
-        }
-
-        return false;
-    }
-
 
     /** Function to retrieve donated amount when a project expires.
       */
@@ -132,5 +138,63 @@ contract Project {
         currentState = state;
         currentAmount = currentBalance;
         goalAmount = amountGoal;
+    }
+
+// function to create request for payout of cetrain amout of money for some requirement
+
+    function createRequest( string memory _desc, uint _value, address payable _receipient) public inState(State.Successful) returns(bool){
+        require(msg.sender == creator, "only manager can create Request");
+        require(_value <= currentBalance);
+
+        Request storage newRequest = requests[numRequests];
+        numRequests++;
+        newRequest.desc = _desc;
+        newRequest.value = _value;
+        newRequest.receipient = _receipient;
+        newRequest.status = false;
+        newRequest.noOfVoter = 0;
+        return true;
+    }
+
+    // function to add vote to particular request 
+    function voteRequest(uint _requestNo) public returns(bool, uint){
+        require(contributions[msg.sender] > 0, "you must be a contributor to vote");
+        Request storage thisRequest = requests[_requestNo];
+        require (thisRequest.voters[msg.sender] == false, "you have already voted");
+        thisRequest.noOfVoter++;
+        thisRequest.voters[msg.sender] = true;
+        // return thisRequest.noOfVoter;
+        if(thisRequest.noOfVoter >= noOfContributors.div(2)) {
+            thisRequest.status = true;
+            sendPayoutRequest(thisRequest.receipient,thisRequest.value, _requestNo);
+       
+        }
+        else {
+           
+        }
+        return (false, thisRequest.noOfVoter);
+
+    } 
+    // function to send payout to particular address if the vote is won by creator
+
+    function sendPayoutRequest(address payable _address, uint _value, uint _requestNo) public inState(State.Successful) returns(bool, uint) {
+         Request storage thisRequest = requests[_requestNo];
+         require(thisRequest.noOfVoter >= noOfContributors.div(2), "condition not fullfilled yet");
+        // _address.transfer(_value);
+         if (_address.send(_value)) {
+            emit CreatorPaid(_address);
+            currentBalance = currentBalance.sub(_value);
+            return (true, thisRequest.noOfVoter);
+        } else {
+             return (false, thisRequest.noOfVoter);
+        }
+    }
+
+    function getContractBalance() public view returns(uint) {
+        return address(this).balance;
+    }
+    function getNoOfVoters(uint _requestId) view public returns(uint) {
+        Request storage thisRequest = requests[_requestId];
+        return thisRequest.noOfVoter;
     }
 }
