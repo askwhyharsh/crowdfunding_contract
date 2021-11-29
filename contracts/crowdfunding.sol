@@ -3,6 +3,9 @@ pragma solidity ^0.8.0;
 
 import "hardhat/console.sol";
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
+import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
+import '@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol';
+
 
 
 contract Project {
@@ -102,7 +105,7 @@ contract Project {
         completeAt = block.timestamp;
     }
 
-    /** Function to retrieve donated amount when a project expires.
+    /** Function to refund donated amount when a project expires.
       */
     function getRefund() public inState(State.Expired) returns (bool) {
         require(contributions[msg.sender] > 0);
@@ -206,7 +209,7 @@ contract Project {
 
 
 
-// Function to run/execute/create new project and add it to an array list 
+// Contract to run/execute/create new project and add it to an array list on above contract
 
 
 
@@ -267,3 +270,4 @@ function startProject(
 
 
 }
+
