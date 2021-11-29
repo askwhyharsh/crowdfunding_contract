@@ -15,11 +15,13 @@ async function main() {
   let txn2 = await crowdfunding.returnAllProjects();
 
   console.log(txn2)
-let contract1 = await crowdfunding.startProject("NewProject", "test", 2, 100 )
+let contract1 = await crowdfunding.startProject("NewProject", "test", 2, 100 );
+
+ contract1.wait();
  console.log(contract1);
  
   let txn = await crowdfunding.returnAllProjects();
-
+  
    console.log(txn)
 
    let txn3 = await crowdfunding.returnSpecificProject(0);
@@ -35,3 +37,6 @@ main()
     console.error(error);
     process.exit(1);
   });
+
+
+  // deployed already address = 0x84D23022287e347f21d51be039D058545177d407
