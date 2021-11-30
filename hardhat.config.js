@@ -28,8 +28,8 @@ module.exports = {
       hardhat: {
 
       },
-      rinkeby: {
-        url: process.env.ALCHEMY_URL,
+      matic: {
+        url: process.env.ALCHEMY_URL_MATIC,
         accounts: [`0x${process.env.PRIVATE_KEY}`]
       }
   }

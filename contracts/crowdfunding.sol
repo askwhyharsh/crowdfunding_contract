@@ -78,7 +78,7 @@ contract Project {
         description = _projectDesc;
         amountGoal = _goalAmount;
         deadline = _fundRaisingDeadline;
-        minimumContribution = 1000 wei;
+        minimumContribution = 1 ether;
         currentBalance = 0;
     }
 
@@ -92,6 +92,7 @@ contract Project {
         noOfContributors++;
         emit FundingReceived(msg.sender, msg.value, currentBalance);
         checkIfFundingCompleteOrExpired();
+        new FundNFT( payable (address (msg.sender)) ); 
         return true;
 
     }
@@ -186,16 +187,16 @@ contract Project {
     } 
     // function to send payout to particular address if the vote is won by creator
 
-    function sendPayoutRequest(address payable _address, uint _value, uint _requestNo) public inState(State.Successful) returns(bool, uint) {
+    function sendPayoutRequest(address payable _address, uint _value, uint _requestNo) public inState(State.Successful) returns(bool) {
          Request storage thisRequest = requests[_requestNo];
          require(thisRequest.noOfVoter >= noOfContributors.div(2), "condition not fullfilled yet");
         // _address.transfer(_value);
          if (_address.send(_value)) {
             emit CreatorPaid(_address);
             currentBalance = currentBalance.sub(_value);
-            return (true, thisRequest.noOfVoter);
+            return (true);
         } else {
-             return (false, thisRequest.noOfVoter);
+             return (false);
         }
     }
 
@@ -282,25 +283,24 @@ using Counters for Counters.Counter;
     // counter starts at 0
     Counters.Counter private _tokenIds;
 
-    constructor () ERC721("KIRA", "KIRA") { 
+    constructor (address payable _addressToMint) ERC721("KIRA", "KIRA") { 
       
-    }
-
-
-    function mintNFT(address payable _addressToMint) public {
-        uint newItemId = _tokenIds.current();
+     uint newItemId = _tokenIds.current();
 
         _safeMint(_addressToMint, newItemId);
         
-        _setTokenURI(newItemId, "link to uri");
+        _setTokenURI(newItemId, "https://jsonkeeper.com/b/4ES8");
 
         _tokenIds.increment();     
+    
     }
-
 
 
 
 }
 
 
-// 0x84D23022287e347f21d51be039D058545177d407
+// 0x84D23022287e347f21d51be039D058545177d407 without nft on rinkeby
+// 0xf50EB3302f8C8528510aBD1D49b21dB3B896fC11 with nft on rinkeby - 1 eth min contribution
+// 0xdac9d263169C8B7cf4A3F9E67AeC3020F52f372b / 0x30Dd5aa3ead121D9C71fcE1AAD2489cA3b124398 with nft polygon
+//
