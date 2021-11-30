@@ -275,4 +275,32 @@ function startProject(
 }
 
 
-// deployed address of the above contract = 0x84D23022287e347f21d51be039D058545177d407
+contract FundNFT is ERC721URIStorage {
+
+
+using Counters for Counters.Counter;
+    // counter starts at 0
+    Counters.Counter private _tokenIds;
+
+    constructor () ERC721("KIRA", "KIRA") { 
+      
+    }
+
+
+    function mintNFT(address payable _addressToMint) public {
+        uint newItemId = _tokenIds.current();
+
+        _safeMint(_addressToMint, newItemId);
+        
+        _setTokenURI(newItemId, "link to uri");
+
+        _tokenIds.increment();     
+    }
+
+
+
+
+}
+
+
+// 0x84D23022287e347f21d51be039D058545177d407
