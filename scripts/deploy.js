@@ -14,18 +14,18 @@ async function main() {
   console.log("Crowdfunding project deployed to:", crowdfunding.address);
   let txn2 = await crowdfunding.returnAllProjects();
 
-  console.log(txn2)
-let contract1 = await crowdfunding.startProject("NewProject", "test", 2, 100 );
+//   console.log(txn2)
+// let contract1 = await crowdfunding.startProject("NewProject", "test", 2, 100 );
 
- contract1.wait();
- console.log(contract1);
+//  contract1.wait();
+//  console.log(contract1);
  
-  let txn = await crowdfunding.returnAllProjects();
+//   let txn = await crowdfunding.returnAllProjects();
   
-   console.log(txn)
+//    console.log(txn)
 
-   let txn3 = await crowdfunding.returnSpecificProject(0);
-   console.log(txn3);
+//    let txn3 = await crowdfunding.returnSpecificProject(0);
+//    console.log(txn3);
 
 }
 

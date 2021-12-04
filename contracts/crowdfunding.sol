@@ -3,12 +3,14 @@ pragma solidity ^0.8.0;
 
 import "hardhat/console.sol";
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
-
-
 import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
 import '@openzeppelin/contracts/utils/Counters.sol';
 import '@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol';
 
+// import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/math/SafeMath.sol";
+// import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/Counters.sol";
+// import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC721/ERC721.sol;
+// import "https://github.com/OpenZeppelin/openzeppelin-contracts/tree/master/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 
 
 contract Project {
@@ -29,6 +31,8 @@ contract Project {
     uint256 public currentBalance;
     uint public deadline;
     string public title;
+    string public location;
+    string public category;
     string public description;
     State public state = State.Fundraising; // initialize on create
     mapping (address => uint) public contributions;
@@ -70,7 +74,9 @@ contract Project {
         string memory _projectTitle,
         string memory _projectDesc,
         uint _fundRaisingDeadline,
-        uint _goalAmount
+        uint _goalAmount,
+        string memory _location,
+        string memory _category
     ) {
         projectId = projectID;
         creator = _projectStarter;
@@ -78,8 +84,11 @@ contract Project {
         description = _projectDesc;
         amountGoal = _goalAmount;
         deadline = _fundRaisingDeadline;
-        minimumContribution = 1 ether;
+        minimumContribution = 0 ether;
         currentBalance = 0;
+        location = _location;
+        category = _category;
+
     }
 
     /** Function to fund a project.
@@ -108,6 +117,7 @@ contract Project {
         }
         completeAt = block.timestamp;
     }
+
 
     /** Function to refund donated amount when a project expires.
       */
@@ -138,7 +148,9 @@ contract Project {
         uint256 deadLine,
         State currentState,
         uint256 currentAmount,
-        uint256 goalAmount
+        uint256 goalAmount,
+        string memory _location,
+        string memory _category
     ) {
         projectStarter = creator;
         projectTitle = title;
@@ -147,6 +159,9 @@ contract Project {
         currentState = state;
         currentAmount = currentBalance;
         goalAmount = amountGoal;
+        _location = location;
+        _category = category;
+
     }
 
 // function to create request for payout of cetrain amout of money for some requirement
@@ -225,7 +240,7 @@ contract crowdfunding  {
     // List of existing projects
     Project[] private projects;
     uint projectID;
-
+    mapping(address => Project[]) particularProject;
 // Event that will be emitted whenever a new project is started
     event ProjectStarted(
         address contractAddress,
@@ -242,11 +257,14 @@ function startProject(
         string memory title,
         string memory description,
         uint durationInDays,
-        uint amountToRaise
+        uint amountToRaise, 
+        string memory location,
+        string memory category
     ) external {
-        uint raiseUntil = block.timestamp.add(durationInDays.mul(1 days));
+        uint raiseUntil = block.timestamp.add(durationInDays.mul(60));
+        // uint raiseUntil = block.timestamp.add(durationInDays.mul(1 days));
        
-        Project newProject = new Project( projectID ,payable(msg.sender), title, description, raiseUntil, amountToRaise);
+        Project newProject = new Project( projectID ,payable(msg.sender), title, description, raiseUntil, amountToRaise, location, category );
         projects.push(newProject);
         projectID++;
 
@@ -259,6 +277,8 @@ function startProject(
             raiseUntil,
             amountToRaise
         );
+
+        particularProject[msg.sender].push(newProject);
     }        
 
 //   Function to get all projects' contract addresses.
@@ -270,6 +290,10 @@ function startProject(
 
     function returnSpecificProject(uint _projectID) public view returns(Project) {
         return projects[_projectID];
+    }
+
+    function returnParticularProjects() public view returns(Project[] memory) {
+        return particularProject[msg.sender];
     }
 
 
@@ -295,12 +319,7 @@ using Counters for Counters.Counter;
     
     }
 
-
-
 }
 
 
-// 0x84D23022287e347f21d51be039D058545177d407 without nft on rinkeby
-// 0xf50EB3302f8C8528510aBD1D49b21dB3B896fC11 with nft on rinkeby - 1 eth min contribution
-// 0xdac9d263169C8B7cf4A3F9E67AeC3020F52f372b / 0x30Dd5aa3ead121D9C71fcE1AAD2489cA3b124398 with nft polygon
-//
+// deployed address latest - 
