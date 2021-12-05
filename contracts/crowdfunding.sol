@@ -50,7 +50,7 @@ contract projectContract {
     uint  deadline;
     string  location;
     string  category;
-    
+    string img;
     State  state; // initialize on create  stae = State.Fundraising;
     mapping (address => uint)  contributions;
     uint noOfContributors;
@@ -69,6 +69,7 @@ contract projectContract {
     uint  deadline;
     string  location;
     string  category;
+    string img;
     State  state; 
     uint noOfContributors;
     uint  numRequests;
@@ -104,7 +105,7 @@ function startProject(
         uint _fundRaisingDeadline,
         uint _goalAmount,
         string memory _location,
-        string memory _category) public {
+        string memory _category, string memory _img) public {
         projects.push();
         uint index = projects.length - 1;
         
@@ -119,6 +120,7 @@ function startProject(
         projects[index].currentBalance = 0;
         projects[index].location = _location;
         projects[index].category = _category;
+        projects[index].img = _img;
         projects[index].state = State.Fundraising;
 
         // we will push these things in ProjectR as well so that we can call them from outside function (as we can't call projects[] because it is a struct that contains nested mapping)
@@ -132,6 +134,7 @@ function startProject(
         projectsR[index].currentBalance = 0;
         projectsR[index].location = _location;
         projectsR[index].category = _category;
+        projectsR[index].img = _img;
         projectsR[index].state = State.Fundraising;
 
         counterProjectID++;
@@ -286,7 +289,7 @@ function startProject(
         return thisRequest.noOfVoter;    
     }
 
-    function getAlProjects() public view returns (ProjectR[] memory) {
+    function getAllProjects() public view returns (ProjectR[] memory) {
      return projectsR;
            
     }
