@@ -9,11 +9,11 @@ import '@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol';
 
 // import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/math/SafeMath.sol";
 // import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/Counters.sol";
-// import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC721/ERC721.sol;
-// import "https://github.com/OpenZeppelin/openzeppelin-contracts/tree/master/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+// import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC721/ERC721.sol";
+// import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 
 
-contract Project {
+contract projectContract {
     using SafeMath for uint256;
     
     // enum used for defining state of the funding
@@ -22,27 +22,8 @@ contract Project {
         Expired,
         Successful
     }
-
-    // State variables
-    uint public projectId;
-    address payable public creator;
-    uint public amountGoal; // required to reach at least this much, else everyone gets refund
-    uint public completeAt;
-    uint256 public currentBalance;
-    uint public deadline;
-    string public title;
-    string public location;
-    string public category;
-    string public description;
-    State public state = State.Fundraising; // initialize on create
-    mapping (address => uint) public contributions;
-
-    uint public minimumContribution;
-    // variables for voting of decisions
-
-    uint public noOfContributors;
     struct Request {
-       
+        
         string desc; 
         uint value;
         address payable receipient; 
@@ -50,88 +31,171 @@ contract Project {
         uint noOfVoter;
         mapping (address=>bool) voters;
     }
+    struct RequestDetails {
+        
+        string desc; 
+        uint value;
+        address payable receipient; 
+        bool status;
+        uint noOfVoter;
+    }
+   struct Project {
+    // State variables
+    uint  projectId;
+    address payable  creator;
+    string  title;
+    string  description;
+    uint  amountGoal; // required to reach at least this much, else everyone gets refund
+    uint  currentBalance;
+    uint  deadline;
+    string  location;
+    string  category;
+    
+    State  state; // initialize on create  stae = State.Fundraising;
+    mapping (address => uint)  contributions;
+    uint noOfContributors;
+    mapping (uint => Request)  requests;
+    uint  numRequests;
+   
+   }
+   struct ProjectR {
+    // State variables
+    uint  projectId;
+    address payable  creator;
+    string  title;
+    string  description;
+    uint  amountGoal; // required to reach at least this much, else everyone gets refund
+    uint  currentBalance;
+    uint  deadline;
+    string  location;
+    string  category;
+    State  state; 
+    uint noOfContributors;
+    uint  numRequests;
+    RequestDetails[] requestsDetails;
+   
+   }
 
-    mapping (uint => Request)  public requests;
-    uint public numRequests;
+   uint counterProjectID;
+
+
+   Project[] projects;
+
+   ProjectR[] public projectsR;
+
+
+
 
     
 
     // Event that will be emitted whenever funding will be received
     event FundingReceived(address contributor, uint amount, uint currentTotal);
-    // Event that will be emitted whenever the project starter has received the funds
+    // Event that will be emitted whenever the project request has been fullfilled
     event CreatorPaid(address recipient);
 
-    // Modifier to check current state
-    modifier inState(State _state) {
-        require(state == _state);
-        _;
-    }
+    
 
+    
 
-    constructor
-    (   uint projectID,
-        address payable _projectStarter,
+ 
+function startProject(
         string memory _projectTitle,
         string memory _projectDesc,
         uint _fundRaisingDeadline,
         uint _goalAmount,
         string memory _location,
-        string memory _category
-    ) {
-        projectId = projectID;
-        creator = _projectStarter;
-        title = _projectTitle;
-        description = _projectDesc;
-        amountGoal = _goalAmount;
-        deadline = _fundRaisingDeadline;
-        minimumContribution = 0 ether;
-        currentBalance = 0;
-        location = _location;
-        category = _category;
+        string memory _category) public {
+        projects.push();
+        uint index = projects.length - 1;
+        
 
-    }
+        projects[index].projectId = counterProjectID;
+        
+        projects[index].creator = payable(address(msg.sender));
+        projects[index].title = _projectTitle;
+        projects[index].description = _projectDesc;
+        projects[index].amountGoal = _goalAmount;
+        projects[index].deadline = block.timestamp.add(_fundRaisingDeadline.mul(60));
+        projects[index].currentBalance = 0;
+        projects[index].location = _location;
+        projects[index].category = _category;
+        projects[index].state = State.Fundraising;
+
+        // we will push these things in ProjectR as well so that we can call them from outside function (as we can't call projects[] because it is a struct that contains nested mapping)
+        projectsR.push();
+        projectsR[index].projectId = counterProjectID;
+        projectsR[index].creator = payable(address(msg.sender));
+        projectsR[index].title = _projectTitle;
+        projectsR[index].description = _projectDesc;
+        projectsR[index].amountGoal = _goalAmount;
+        projectsR[index].deadline = block.timestamp.add(_fundRaisingDeadline.mul(60));
+        projectsR[index].currentBalance = 0;
+        projectsR[index].location = _location;
+        projectsR[index].category = _category;
+        projectsR[index].state = State.Fundraising;
+
+        counterProjectID++;
+
+
+        }
+
 
     /** Function to fund a project.
       */
-    function contribute() external inState(State.Fundraising) payable returns(bool){
-        require(msg.sender != creator, "Project creator can't contribute");
-        require(msg.value> minimumContribution, "Minimum Contribution should be 1000 wei");
-        contributions[msg.sender] = contributions[msg.sender].add(msg.value);
-        currentBalance = currentBalance.add(msg.value);
-        noOfContributors++;
-        emit FundingReceived(msg.sender, msg.value, currentBalance);
-        checkIfFundingCompleteOrExpired();
+    function contribute(uint _projectId) external payable returns(bool){
+        require(msg.sender != projects[_projectId].creator, "Project creator can't contribute");
+        checkIfFundingCompleteOrExpired(_projectId);
+        require( projects[_projectId].state == State.Fundraising, "project expired or succesful can't contribute");
+        projects[_projectId].contributions[msg.sender] = projects[_projectId].contributions[msg.sender].add(msg.value);
+        projects[_projectId].currentBalance = projects[_projectId].currentBalance.add(msg.value);
+        projects[_projectId].noOfContributors++;
+
+
+        projectsR[_projectId].noOfContributors++;
+        projectsR[_projectId].currentBalance = projectsR[_projectId].currentBalance.add(msg.value);
+
+
+        // emit FundingReceived(msg.sender, msg.value, currentBalance);
         new FundNFT( payable (address (msg.sender)) ); 
+         checkIfFundingCompleteOrExpired(_projectId);
         return true;
 
     }
 
     /**  Function to change the project state depending on conditions.
       */
-    function checkIfFundingCompleteOrExpired() public {
-        if (currentBalance >= amountGoal) {
-            state = State.Successful;
-            // payOut();
-        } else if (block.timestamp > deadline)  {
-            state = State.Expired;
+    function checkIfFundingCompleteOrExpired(uint _projectId) public {
+        if (projects[_projectId].currentBalance >= projects[_projectId].amountGoal) {
+            projects[_projectId].state = State.Successful;
+
+            projectsR[_projectId].state = State.Successful;
+
+        // payOut();
+        } else if (block.timestamp > projects[_projectId].deadline)  {
+            projects[_projectId].state = State.Expired;
+            projectsR[_projectId].state = State.Expired;
         }
-        completeAt = block.timestamp;
+       
     }
 
 
     /** Function to refund donated amount when a project expires.
       */
-    function getRefund() public inState(State.Expired) returns (bool) {
-        require(contributions[msg.sender] > 0);
+    function getRefund(uint _projectId) public returns (bool) {
+         checkIfFundingCompleteOrExpired(_projectId);
+        require( projects[_projectId].state == State.Expired, "project not expired, can't refund");
+        require(projects[_projectId].contributions[msg.sender] > 0);
 
-        uint amountToRefund = contributions[msg.sender];
-        contributions[msg.sender] = 0;
+
+        uint amountToRefund = projects[_projectId].contributions[msg.sender];
+        projects[_projectId].contributions[msg.sender] = 0;
          address payable sender = payable(msg.sender);
         if (!sender.send(amountToRefund)) {
-            contributions[msg.sender] = amountToRefund;
+            projects[_projectId].contributions[msg.sender] = amountToRefund;
             return false;
         } else {
-            currentBalance = currentBalance.sub(amountToRefund);
+            projects[_projectId].currentBalance = projects[_projectId].currentBalance.sub(amountToRefund);
+            projectsR[_projectId].currentBalance = projectsR[_projectId].currentBalance.sub(amountToRefund);
         }
 
         return true;
@@ -140,75 +204,74 @@ contract Project {
     // /** Function to get specific information about the project.
     //   * Returns all the project's details
     //   */
-    function getDetails() public view returns 
-    (
-        address payable projectStarter,
-        string memory projectTitle,
-        string memory projectDesc,
-        uint256 deadLine,
-        State currentState,
-        uint256 currentAmount,
-        uint256 goalAmount,
-        string memory _location,
-        string memory _category
-    ) {
-        projectStarter = creator;
-        projectTitle = title;
-        projectDesc = description;
-        deadLine = deadline;
-        currentState = state;
-        currentAmount = currentBalance;
-        goalAmount = amountGoal;
-        _location = location;
-        _category = category;
+    function getDetails(uint _projectId) public view returns (ProjectR memory) {
+    return projectsR[_projectId];
 
     }
 
 // function to create request for payout of cetrain amout of money for some requirement
 
-    function createRequest( string memory _desc, uint _value, address payable _receipient) public inState(State.Successful) returns(bool){
-        require(msg.sender == creator, "only manager can create Request");
-        require(_value <= currentBalance);
+    function createRequest( uint _projectId, string memory _desc, uint _value, address payable _receipient) public  returns(bool){
+        require( projects[_projectId].state == State.Successful, "project expired or successful can't create request");
+        require(msg.sender == projects[_projectId].creator, "only manager can create Request");
+        require(_value <= projects[_projectId].currentBalance);
+        uint num = projects[_projectId].numRequests;
+        Request storage newRequest = projects[_projectId].requests[num];
+        RequestDetails storage newRequestDetails = projectsR[_projectId].requestsDetails[num];
+        projects[_projectId].numRequests++;
+        projectsR[_projectId].numRequests++;
 
-        Request storage newRequest = requests[numRequests];
-        numRequests++;
         newRequest.desc = _desc;
         newRequest.value = _value;
         newRequest.receipient = _receipient;
         newRequest.status = false;
         newRequest.noOfVoter = 0;
+
+        newRequestDetails.desc = _desc;
+        newRequestDetails.value = _value;
+        newRequestDetails.receipient = _receipient;
+        newRequestDetails.status = false;
+        newRequestDetails.noOfVoter = 0;
+
         return true;
     }
 
     // function to add vote to particular request 
-    function voteRequest(uint _requestNo) public returns(bool, uint){
-        require(contributions[msg.sender] > 0, "you must be a contributor to vote");
-        Request storage thisRequest = requests[_requestNo];
-        require(thisRequest.noOfVoter < noOfContributors.div(2));
+    function voteRequest(uint _projectId, uint _requestNo) public returns(bool, uint){
+         require( projects[_projectId].state == State.Successful, "project expired or successful can't create request");
+        require(projects[_projectId].contributions[msg.sender] > 0, "you must be a contributor to vote");
+
+        Request storage thisRequest = projects[_projectId].requests[_requestNo];
+        RequestDetails storage thisRequestDetails = projectsR[_projectId].requestsDetails[_requestNo];
+
+        require(thisRequest.noOfVoter < projects[_projectId].noOfContributors.div(2));
         require (thisRequest.voters[msg.sender] == false, "you have already voted");
         thisRequest.noOfVoter++;
+        thisRequestDetails.noOfVoter++;
+
         thisRequest.voters[msg.sender] = true;
         // return thisRequest.noOfVoter;
-        if(thisRequest.noOfVoter >= noOfContributors.div(2)) {
-            thisRequest.status = true;
-            sendPayoutRequest(thisRequest.receipient,thisRequest.value, _requestNo);
-       
+        if(thisRequest.noOfVoter >= projects[_projectId].noOfContributors.div(2)) {
+        thisRequest.status = true;
+        thisRequestDetails.status = true;
+        sendPayoutRequest(_projectId, thisRequest.receipient, thisRequest.value, _requestNo);    
         }
         else {
-           
+         
         }
         return (false, thisRequest.noOfVoter);
-
+        
     } 
     // function to send payout to particular address if the vote is won by creator
 
-    function sendPayoutRequest(address payable _address, uint _value, uint _requestNo) public inState(State.Successful) returns(bool) {
-         Request storage thisRequest = requests[_requestNo];
-         require(thisRequest.noOfVoter >= noOfContributors.div(2), "condition not fullfilled yet");
+    function sendPayoutRequest(uint _projectId, address payable _address, uint _value, uint _requestNo) private  returns(bool) {
+         Request storage thisRequest = projects[_projectId].requests[_requestNo]; 
+         require(thisRequest.noOfVoter >= projects[_projectId].noOfContributors.div(2), "condition not fullfilled yet");
         // _address.transfer(_value);
          if (_address.send(_value)) {
             emit CreatorPaid(_address);
-            currentBalance = currentBalance.sub(_value);
+            projects[_projectId].currentBalance = projects[_projectId].currentBalance.sub(_value);
+            projectsR[_projectId].currentBalance = projectsR[_projectId].currentBalance.sub(_value);
             return (true);
         } else {
              return (false);
@@ -218,89 +281,33 @@ contract Project {
     function getContractBalance() public view returns(uint) {
         return address(this).balance;
     }
-    function getNoOfVoters(uint _requestId) view public returns(uint) {
-        Request storage thisRequest = requests[_requestId];
-        return thisRequest.noOfVoter;
-    }
-}
-
-
-
-
-
-// Contract to run/execute/create new project and add it to an array list on above contract
-
-
-
-
-
-contract crowdfunding  {
-    using SafeMath for uint256;
-
-    // List of existing projects
-    Project[] private projects;
-    uint projectID;
-    mapping(address => Project[]) particularProject;
-// Event that will be emitted whenever a new project is started
-    event ProjectStarted(
-        address contractAddress,
-        address projectStarter,
-        string projectTitle,
-        string projectDesc,
-        uint256 deadline,
-        uint256 goalAmount
-    );
-    // Function to start a new project.
-
-
-function startProject(
-        string memory title,
-        string memory description,
-        uint durationInDays,
-        uint amountToRaise, 
-        string memory location,
-        string memory category
-    ) external {
-        uint raiseUntil = block.timestamp.add(durationInDays.mul(60));
-        // uint raiseUntil = block.timestamp.add(durationInDays.mul(1 days));
-       
-        Project newProject = new Project( projectID ,payable(msg.sender), title, description, raiseUntil, amountToRaise, location, category );
-        projects.push(newProject);
-        projectID++;
-
-        emit ProjectStarted(
-
-            address(newProject),
-            msg.sender,
-            title,
-            description,
-            raiseUntil,
-            amountToRaise
-        );
-
-        particularProject[msg.sender].push(newProject);
-    }        
-
-//   Function to get all projects' contract addresses.
-    //   A list of all projects' contract addreses
-      
-    function returnAllProjects() external view returns(Project[] memory){
-        return projects;
+    function getNoOfVoters(uint _projectId, uint _requestId) view public returns(uint) {
+        Request storage thisRequest = projects[_projectId].requests[_requestId]; 
+        return thisRequest.noOfVoter;    
     }
 
-    function returnSpecificProject(uint _projectID) public view returns(Project) {
-        return projects[_projectID];
+    function getAlProjects() public view returns (ProjectR[] memory) {
+     return projectsR;
+           
     }
 
-    function returnParticularProjects() public view returns(Project[] memory) {
-        return particularProject[msg.sender];
+    function myContributions(uint _projectId) public view returns (uint) {
+      return projects[_projectId].contributions[msg.sender];
+    }
+     
+    function getAllRequests(uint _projectID) public view returns (RequestDetails[] memory) {
+    return projectsR[_projectID].requestsDetails;
     }
 
 
 }
+
+
+
 
 
 contract FundNFT is ERC721URIStorage {
+
 
 
 using Counters for Counters.Counter;
@@ -321,5 +328,3 @@ using Counters for Counters.Counter;
 
 }
 
-
-// deployed address latest - 
