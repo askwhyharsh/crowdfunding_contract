@@ -51,6 +51,7 @@ contract projectContract {
     string  location;
     string  category;
     string img;
+    string uri;
     State  state; // initialize on create  stae = State.Fundraising;
     mapping (address => uint)  contributions;
     uint noOfContributors;
@@ -70,6 +71,7 @@ contract projectContract {
     string  location;
     string  category;
     string img;
+    string uri;
     State  state; 
     uint noOfContributors;
     uint  numRequests;
@@ -105,7 +107,7 @@ function startProject(
         uint _fundRaisingDeadline,
         uint _goalAmount,
         string memory _location,
-        string memory _category, string memory _img) public {
+        string memory _category, string memory _img, string memory _uri) public {
         projects.push();
         uint index = projects.length - 1;
         
@@ -121,6 +123,7 @@ function startProject(
         projects[index].location = _location;
         projects[index].category = _category;
         projects[index].img = _img;
+        projects[index].uri = _uri;
         projects[index].state = State.Fundraising;
 
         // we will push these things in ProjectR as well so that we can call them from outside function (as we can't call projects[] because it is a struct that contains nested mapping)
@@ -134,7 +137,7 @@ function startProject(
         projectsR[index].currentBalance = 0;
         projectsR[index].location = _location;
         projectsR[index].category = _category;
-        projectsR[index].img = _img;
+        projectsR[index].uri = _uri;
         projectsR[index].state = State.Fundraising;
 
         counterProjectID++;
@@ -159,7 +162,7 @@ function startProject(
 
 
         // emit FundingReceived(msg.sender, msg.value, currentBalance);
-        new FundNFT( payable (address (msg.sender)) ); 
+        new FundNFT( payable (address (msg.sender)),  projects[_projectId].uri); 
          checkIfFundingCompleteOrExpired(_projectId);
         return true;
 
@@ -317,13 +320,13 @@ using Counters for Counters.Counter;
     // counter starts at 0
     Counters.Counter private _tokenIds;
 
-    constructor (address payable _addressToMint) ERC721("KIRA", "KIRA") { 
+    constructor (address payable _addressToMint, string memory uri) ERC721("LIGHT", "LT") { 
       
      uint newItemId = _tokenIds.current();
 
         _safeMint(_addressToMint, newItemId);
         
-        _setTokenURI(newItemId, "https://jsonkeeper.com/b/4ES8");
+        _setTokenURI(newItemId, uri);
 
         _tokenIds.increment();     
     
