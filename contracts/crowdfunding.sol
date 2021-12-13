@@ -125,7 +125,7 @@ function startProject(
         projects[index].img = _img;
         projects[index].uri = _uri;
         projects[index].state = State.Fundraising;
-
+        
         // we will push these things in ProjectR as well so that we can call them from outside function (as we can't call projects[] because it is a struct that contains nested mapping)
         projectsR.push();
         projectsR[index].projectId = counterProjectID;
@@ -137,8 +137,10 @@ function startProject(
         projectsR[index].currentBalance = 0;
         projectsR[index].location = _location;
         projectsR[index].category = _category;
+        projectsR[index].img = _img;
         projectsR[index].uri = _uri;
         projectsR[index].state = State.Fundraising;
+    
 
         counterProjectID++;
 
@@ -175,11 +177,13 @@ function startProject(
             projects[_projectId].state = State.Successful;
 
             projectsR[_projectId].state = State.Successful;
+           
 
         // payOut();
         } else if (block.timestamp > projects[_projectId].deadline)  {
             projects[_projectId].state = State.Expired;
             projectsR[_projectId].state = State.Expired;
+          
         }
        
     }
@@ -217,13 +221,14 @@ function startProject(
 
 // function to create request for payout of cetrain amout of money for some requirement
 
-    function createRequest( uint _projectId, string memory _desc, uint _value, address payable _receipient) public  returns(bool){
+    function createRequest( uint _projectId, string memory _desc, uint _value, address payable _receipient) public  {
         require( projects[_projectId].state == State.Successful, "project expired or successful can't create request");
         require(msg.sender == projects[_projectId].creator, "only manager can create Request");
-        require(_value <= projects[_projectId].currentBalance);
+        require(_value <= projects[_projectId].currentBalance, "withdrawal is more than balance");
         uint num = projects[_projectId].numRequests;
         Request storage newRequest = projects[_projectId].requests[num];
-        RequestDetails storage newRequestDetails = projectsR[_projectId].requestsDetails[num];
+        projectsR[_projectId].requestsDetails.push();
+        RequestDetails memory newRequestDetails = projectsR[_projectId].requestsDetails[num];
         projects[_projectId].numRequests++;
         projectsR[_projectId].numRequests++;
 
@@ -239,7 +244,6 @@ function startProject(
         newRequestDetails.status = false;
         newRequestDetails.noOfVoter = 0;
 
-        return true;
     }
 
     // function to add vote to particular request 

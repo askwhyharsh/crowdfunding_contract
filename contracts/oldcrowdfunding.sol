@@ -34,6 +34,8 @@ contract Project {
     string public location;
     string public category;
     string public description;
+    string public uri;
+    string public img;
     State public state = State.Fundraising; // initialize on create
     mapping (address => uint) public contributions;
 
@@ -76,7 +78,9 @@ contract Project {
         uint _fundRaisingDeadline,
         uint _goalAmount,
         string memory _location,
-        string memory _category
+        string memory _category, 
+        string memory _img, 
+        string memory _uri
     ) {
         projectId = projectID;
         creator = _projectStarter;
@@ -88,6 +92,8 @@ contract Project {
         currentBalance = 0;
         location = _location;
         category = _category;
+        uri = _uri;
+        img = _img;
 
     }
 
@@ -101,7 +107,7 @@ contract Project {
         noOfContributors++;
         emit FundingReceived(msg.sender, msg.value, currentBalance);
         checkIfFundingCompleteOrExpired();
-        new FundNFT( payable (address (msg.sender)) ); 
+        new FundNFT( payable (address (msg.sender)), uri ); 
         return true;
 
     }
@@ -185,9 +191,11 @@ contract Project {
         require(contributions[msg.sender] > 0, "you must be a contributor to vote");
         Request storage thisRequest = requests[_requestNo];
         require(thisRequest.noOfVoter < noOfContributors.div(2));
+       
         require (thisRequest.voters[msg.sender] == false, "you have already voted");
         thisRequest.noOfVoter++;
         thisRequest.voters[msg.sender] = true;
+        require(thisRequest.status = false, "Already Paid to the receiptent ");
         // return thisRequest.noOfVoter;
         if(thisRequest.noOfVoter >= noOfContributors.div(2)) {
             thisRequest.status = true;
@@ -202,7 +210,7 @@ contract Project {
     } 
     // function to send payout to particular address if the vote is won by creator
 
-    function sendPayoutRequest(address payable _address, uint _value, uint _requestNo) public inState(State.Successful) returns(bool) {
+    function sendPayoutRequest(address payable _address, uint _value, uint _requestNo) private inState(State.Successful) returns(bool) {
          Request storage thisRequest = requests[_requestNo];
          require(thisRequest.noOfVoter >= noOfContributors.div(2), "condition not fullfilled yet");
         // _address.transfer(_value);
@@ -265,17 +273,18 @@ function startProject(
         uint durationInDays,
         uint amountToRaise, 
         string memory location,
-        string memory category
+        string memory category,
+        string memory _img,
+        string memory _uri
     ) external {
         uint raiseUntil = block.timestamp.add(durationInDays.mul(60));
         // uint raiseUntil = block.timestamp.add(durationInDays.mul(1 days));
        
-        Project newProject = new Project( projectID ,payable(msg.sender), title, description, raiseUntil, amountToRaise, location, category );
+        Project newProject = new Project( projectID ,payable(msg.sender), title, description, raiseUntil, amountToRaise, location, category, _img, _uri );
         projects.push(newProject);
         projectID++;
 
         emit ProjectStarted(
-
             address(newProject),
             msg.sender,
             title,
@@ -321,20 +330,22 @@ function startProject(
 }
 
 
+
 contract FundNFT is ERC721URIStorage {
+
 
 
 using Counters for Counters.Counter;
     // counter starts at 0
     Counters.Counter private _tokenIds;
 
-    constructor (address payable _addressToMint) ERC721("KIRA", "KIRA") { 
+    constructor (address payable _addressToMint, string memory uri) ERC721("LIGHT", "LT") { 
       
      uint newItemId = _tokenIds.current();
 
         _safeMint(_addressToMint, newItemId);
         
-        _setTokenURI(newItemId, "https://jsonkeeper.com/b/4ES8");
+        _setTokenURI(newItemId, uri);
 
         _tokenIds.increment();     
     
