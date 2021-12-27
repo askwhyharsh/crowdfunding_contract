@@ -1,16 +1,16 @@
 //SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.0; 
+//for remix
+// import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/math/SafeMath.sol";
+// import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC721/ERC721.sol";
+// import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 
+
+// for hardhat 
 import "hardhat/console.sol";
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
 import '@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol';
-
-
-// import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/math/SafeMath.sol";
-// import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/Counters.sol";
-// import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC721/ERC721.sol";
-// import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 
 
 contract FundNFT is ERC721URIStorage {
@@ -78,19 +78,19 @@ struct Request {
     }
 
 
-  struct Contributions {
-      uint  projectId;
-      mapping (address => uint)  contributions; // contributions of particular address
-    }
-
-    struct Voters {
+ struct Voters {
        uint requestId;
-       mapping (address=>bool) voters; // a mapping to keep track of which address has voted for withdrawal and which haven't
+       mapping (address=>bool) vote; // a mapping to keep track of which address has voted for withdrawal and which haven't
     
     }
- 
 
-   Voters[] arrayVoters;
+ // contributions of particular address as well as record of voted on request, we are saving this seperately
+  struct Contributions {
+      uint  projectId;
+      mapping (address => uint)  contributions;
+      Voters[] voters;
+ 
+    }
    Contributions[] arrayContributors;
    
 
@@ -244,7 +244,7 @@ function getDetails(uint _projectId) public view returns (Project memory) {
 // we will push a empty struct of Request type in project  
         projects[_projectId].requests.push();
 // we will push a empty strcut of Voters Struct type in voters to keep track of who voted and who haven't
-        arrayVoters.push();
+        arrayContributors[_projectId].voters.push();
 // we will create num for id/index
         uint num = projects[_projectId].requests.length - 1;
 
@@ -292,11 +292,11 @@ function getDetails(uint _projectId) public view returns (Project memory) {
        
         
      // checking if the voter has already voted or not
-        require (arrayVoters[_projectId].voters[msg.sender] == false, "you have already voted");
+        require ( arrayContributors[_projectId].voters[_requestNo].vote[msg.sender] == false, "you have already voted");
      // increament number of voter
         projects[_projectId].requests[_requestNo].noOfVoter++;
       // mark vote of msg.sender to true
-       arrayVoters[_projectId].voters[msg.sender] = true;
+      arrayContributors[_projectId].voters[_requestNo].vote[msg.sender] = true;
       // check if voting won or not, if won do the payout and change the done status to true
 
         if(projects[_projectId].requests[_requestNo].noOfVoter*2 >= projects[_projectId].noOfContributors && projects[_projectId].requests[_requestNo].value <= projects[_projectId].currentBalance) {
@@ -327,4 +327,3 @@ function getDetails(uint _projectId) public view returns (Project memory) {
 
    
 }
-
