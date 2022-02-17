@@ -2,30 +2,59 @@
 // but useful for running the script in a standalone fashion through `node <script>`.
 //
 
+const { ethers } = require("hardhat");
 const hre = require("hardhat");
 
 async function main() {
+  const [owner, creator, contributor] = await ethers.getSigners();
+  // const Crowdfunding = await hre.ethers.getContractFactory("crowdfunding");
+  // const crowdfunding = await Crowdfunding.deploy();
+  // await crowdfunding.deployed();
 
-  const Crowdfunding = await hre.ethers.getContractFactory("crowdfunding");
-  const crowdfunding = await Crowdfunding.deploy();
 
-  await crowdfunding.deployed();
 
-  console.log("Crowdfunding project deployed to:", crowdfunding.address);
-  let txn2 = await crowdfunding.returnAllProjects();
-
-//   console.log(txn2)
-// let contract1 = await crowdfunding.startProject("NewProject", "test", 2, 100 );
-
-//  contract1.wait();
-//  console.log(contract1);
- 
-//   let txn = await crowdfunding.returnAllProjects();
+  const usdc = await hre.ethers.getContractFactory("USDC");
+  const USDC = await usdc.connect(contributor).deploy();
   
-//    console.log(txn)
+  await USDC.deployed();
 
-//    let txn3 = await crowdfunding.returnSpecificProject(0);
-//    console.log(txn3);
+
+  const throwitincontract = await hre.ethers.getContractFactory("throwitin");
+  const ThrowItIn = await throwitincontract.deploy(50, owner.address, USDC.address);
+   
+  await ThrowItIn.deployed();
+
+  console.log("Crowdfunding project deployed to:", ThrowItIn.address);
+  console.log("NFT address ", USDC.address);
+  console.log("balance of usdc", await USDC.connect(contributor).balanceOf(contributor.address));
+  
+
+  let txn2 = await ThrowItIn.getAllProjects();
+
+  console.log(txn2)
+  // string memory _projectTitle,
+  // string memory _projectDesc,
+  // string memory _website,
+  // string memory _twitter,
+  // string memory _discord,
+  // uint _fundRaisingDeadline,
+  // uint _goalAmount,
+  // string memory _location,
+  // string memory _category, string memory _img, string memory _uri 
+let start1 = await ThrowItIn.connect(creator).startProject("NewProject", 2, 100,  "uri" );
+
+   start1.wait();
+
+   let approve = await USDC.approve(ThrowItIn.address, 10000000)
+   await approve.wait();
+   let contribute = await ThrowItIn.connect(contributor).contribute(0, 1000000);
+   await contribute.wait();
+  
+  let txn = await ThrowItIn.getAllProjects();
+  
+   console.log(txn)
+
+ 
 
 }
 
