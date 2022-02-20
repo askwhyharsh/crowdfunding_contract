@@ -1,4 +1,5 @@
 require("@nomiclabs/hardhat-waffle");
+require("@nomiclabs/hardhat-etherscan");
 
 
 const dotenv = require("dotenv")
@@ -41,5 +42,11 @@ module.exports = {
         runs: 200
       }
     }
+  },
+  etherscan: {
+    // Your API key for Etherscan - matic
+    // Obtain one at https://etherscan.io/
+    apiKey: "E3ZH5H64P4IJQ7KI78R582I43UA6PEFFNK"
   }
+
 };

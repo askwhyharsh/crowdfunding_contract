@@ -14,21 +14,29 @@ import '@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 
+import "./Base64.sol";
 contract FundNFT is ERC721URIStorage {
 
     // counter starts at 0
     uint private _tokenId;
+    string private URI;
 // we will take uri from the contract. make sure you have imported ERC721 and ERC721URIStorage from openzeppelin 
-    constructor (address payable _addressToMint, string memory uri) ERC721("Throw", "TT") { 
-      
-     uint newItemId = _tokenId;
+    constructor (string memory name, string memory _uri) ERC721(name, "TII") { 
+    URI = _uri;
+    }
+    mapping (address=>bool) contribution;
+
+
+    function mint(address payable _addressToMint) public { 
+
+         uint newItemId = _tokenId;
 
         _safeMint(_addressToMint, newItemId);
         
-        _setTokenURI(newItemId, uri);
+        _setTokenURI(newItemId, URI);
 
-        _tokenId++;     
-    
+        _tokenId++;  
+
     }
 
 }
@@ -62,15 +70,15 @@ struct Project {
     uint  amountGoal; // required to reach at least this much, else everyone gets refund
     uint  currentBalance; // the current balance of the project or the fund raised balance 
     uint  deadline; // the deadline till when project should get succesful - (in unix time)
-    string  location; // Location of the creator/ fund raiser
-    string  category; // category of the campaign
-    string img; // the cover img of the campaign (ipfs link)
+    // string  location; // Location of the creator/ fund raiser
+    // string  category; // category of the campaign
+    // string img; // the cover img of the campaign (ipfs link)
     string uri; // nft uri that contributors will get
     State  state; // initialize on create with  state = State.Fundraising;
     uint noOfContributors; // total contributors of the campaign / project
     Request[] requests; // total withdrawal requests created by the fund raiser
     uint  numRequests; // Number of requests of withdrawal created by fund raiser
-
+    address NFTaddress;
    }
 
 //   struct Socials {
@@ -154,12 +162,28 @@ function startProject(
         // we will also assign project id to arraycontributor
       
         arrayContributors[index].projectId = counterProjectID; 
+
+        string memory name = Base64.encode(
+            bytes(
+                string(
+                    abi.encodePacked(
+                        '"ThrowItIn Project #',
+                        counterProjectID,'"}'
+                    )
+                )
+            )
+        );
+
+         address nftAddress = address(new FundNFT(name, _uri)); 
+         projects[index].NFTaddress = nftAddress;
     
 
         counterProjectID++;
 
 
         }
+
+       
 
   /**  Function to change the project state depending on conditions.
       */
@@ -309,11 +333,13 @@ function getDetails(uint _projectId) public view returns (Project memory) {
 
 
     function claimNFT(uint _projectID) public {
-       require( projects[_projectID].state == State.Successful, "project expired or successful can't create request");
-        require(arrayContributors[_projectID].contributions[msg.sender] > 0, "you must be a contributor to vote");
+       require( projects[_projectID].state == State.Successful, "project not succesfull yet");
+    require(arrayContributors[_projectID].contributions[msg.sender] > 0, "you must be a contributor to vote");
+      
 
+        FundNFT(projects[_projectID].NFTaddress).mint(payable(msg.sender));
 
-     new FundNFT( payable (address (msg.sender)), projects[_projectID].uri); 
+     
 
     }
 

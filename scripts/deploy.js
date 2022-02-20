@@ -13,46 +13,46 @@ async function main() {
 
 
 
-  const usdc = await hre.ethers.getContractFactory("USDC");
-  const USDC = await usdc.connect(contributor).deploy();
+  // const usdc = await hre.ethers.getContractFactory("USDC");
+  // const USDC = await usdc.connect(contributor).deploy();
   
-  await USDC.deployed();
+  // await USDC.deployed();
 
 
   const throwitincontract = await hre.ethers.getContractFactory("throwitin");
-  const ThrowItIn = await throwitincontract.deploy(50, owner.address, USDC.address);
+  const ThrowItIn = await throwitincontract.deploy(50, owner.address, "0x2058A9D7613eEE744279e3856Ef0eAda5FCbaA7e");
    
   await ThrowItIn.deployed();
 
   console.log("Crowdfunding project deployed to:", ThrowItIn.address);
-  console.log("NFT address ", USDC.address);
-  console.log("balance of usdc", await USDC.connect(contributor).balanceOf(contributor.address));
+//   console.log("USDC address ", USDC.address);
+//   console.log("balance of usdc", await USDC.connect(contributor).balanceOf(contributor.address));
   
 
-  let txn2 = await ThrowItIn.getAllProjects();
+//   let txn2 = await ThrowItIn.getAllProjects();
 
-  console.log(txn2)
-  // string memory _projectTitle,
-  // string memory _projectDesc,
-  // string memory _website,
-  // string memory _twitter,
-  // string memory _discord,
-  // uint _fundRaisingDeadline,
-  // uint _goalAmount,
-  // string memory _location,
-  // string memory _category, string memory _img, string memory _uri 
-let start1 = await ThrowItIn.connect(creator).startProject("NewProject", 2, 100,  "uri" );
+//   console.log(txn2)
+//   // string memory _projectTitle,
+//   // string memory _projectDesc,
+//   // string memory _website,
+//   // string memory _twitter,
+//   // string memory _discord,
+//   // uint _fundRaisingDeadline,
+//   // uint _goalAmount,
+//   // string memory _location,
+//   // string memory _category, string memory _img, string memory _uri 
+// let start1 = await ThrowItIn.connect(creator).startProject("NewProject", 2, 100,  "uri" );
 
-   start1.wait();
+//    start1.wait();
 
-   let approve = await USDC.approve(ThrowItIn.address, 10000000)
-   await approve.wait();
-   let contribute = await ThrowItIn.connect(contributor).contribute(0, 1000000);
-   await contribute.wait();
+//    let approve = await USDC.approve(ThrowItIn.address, 10000000)
+//    await approve.wait();
+//    let contribute = await ThrowItIn.connect(contributor).contribute(0, 1000000);
+//    await contribute.wait();
   
-  let txn = await ThrowItIn.getAllProjects();
+//   let txn = await ThrowItIn.getAllProjects();
   
-   console.log(txn)
+//    console.log(txn)
 
  
 
