@@ -9,15 +9,11 @@ pragma solidity ^0.8.0;
 // for hardhat 
 import "hardhat/console.sol";
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
-import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
-import '@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol';
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 
 
 
 contract sidekicks {
-using SafeMath for uint256;
+// using SafeMath for uint256;
 address payable owner;
 // enum used for defining state of the funding
 
@@ -87,6 +83,7 @@ function startProject() public {
 // in order to contribute,we will take the projectID to find the project which contributor wants to contribute to , also this function will be of payable type
     function contribute(uint _projectId) external payable returns(bool){
         require(msg.value != 0, "contribution can't be 0");
+        require(_projectId < projects.length);
         projects[_projectId].creator.transfer(msg.value);
         projects[_projectId].totalSupport += msg.value;
 
@@ -112,6 +109,14 @@ function startProject() public {
     function myContributions(uint _projectId, address _address) public view returns (uint) {
       return arrayContributors[_projectId].contributions[_address];
     }
+
+    function myProjects() public view returns(uint[] memory) {
+    return projectsOfAddress[msg.sender];
+    }
+
+    function getProject(uint projectId) public view returns (Project memory) {
+   return projects[projectId];
+    } 
      
    
 }
