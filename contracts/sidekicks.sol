@@ -26,6 +26,7 @@ struct Project {
     // State variables
     uint  projectId;
     address payable  creator; // address of the fund raiser
+    
    
     uint  totalSupport; // the current balance of the project or the fund raised balance 
     
@@ -33,9 +34,12 @@ struct Project {
    
    }
 
+   
+
 Project[] projects;
 
 mapping(address=> uint[]) projectsOfAddress;
+mapping(uint=> Project) databaseId;
 
 
   struct Contributions {
@@ -50,15 +54,14 @@ mapping(address=> uint[]) projectsOfAddress;
   // Event that will be emitted whenever funding will be received
     event cryptoKick(address sender, uint amount, uint projectID,uint currentTotal);
     // Event that will be emitted whenever the project request has been fullfilled
-    event projectRegistered(address owner, uint projectID);
+    event projectRegistered(address owner, uint projectID, uint databaseID);
 
-function startProject() public {
+function startProject(uint _databaseId) public returns(uint){
 
         projects.push(); // we will first push a empty struct  and then fill the detials
 		arrayContributors.push(); // we will also push a empty struct of type contributions of anyone for keeping track of contributions of every project
         uint index = projects.length - 1;
        
-
         projects[index].projectId = counterProjectID; // project id given in increasing order
         
         projects[index].creator = payable(address(msg.sender));
@@ -70,9 +73,10 @@ function startProject() public {
         arrayContributors[index].projectId = counterProjectID; 
          projectsOfAddress[msg.sender].push(counterProjectID);                                   
 
+       databaseId[_databaseId] = projects[counterProjectID];
+        emit projectRegistered(msg.sender, counterProjectID, _databaseId);
         counterProjectID++;
-        emit projectRegistered(msg.sender, counterProjectID);
-
+        return counterProjectID -1;
         }
 
        
@@ -117,6 +121,10 @@ function startProject() public {
     function getProject(uint projectId) public view returns (Project memory) {
    return projects[projectId];
     } 
+
+    function getProjectFromDatabaseId(uint _databaseId) public view returns (Project memory) {
+        return databaseId[_databaseId];
+    }
      
    
 }

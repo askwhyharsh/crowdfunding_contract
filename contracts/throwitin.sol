@@ -56,7 +56,7 @@ address payable owner;
  address payable treasury;
 
 constructor(uint maxDeadlineInDays, address payable _treasury, address USDC) {
- maxDeadline = maxDeadlineInDays.mul(24*60*60);     
+ maxDeadline = maxDeadlineInDays;     
 owner = payable(msg.sender);
 treasury = _treasury;
 usdc = USDC;
@@ -130,6 +130,9 @@ struct Request {
     // Event that will be emitted whenever the project request has been fullfilled
     event CreatorPaid(address recipient);
 
+    event ProjectStarted(uint projectID, address creatorAddress);
+    event WithdrawalRequestCreated(uint projectID, uint RequestID);
+
 function startProject(
         string memory _projectTitle,
         uint _fundRaisingDeadline,
@@ -137,7 +140,8 @@ function startProject(
         require(maxDeadline>= _fundRaisingDeadline , "deadline should be less than max deadline");
 
         projects.push(); // we will first push a empty struct  and then fill the detials
-				arrayContributors.push(); // we will also push a empty struct of type contributions of anyone for keeping track of contributions of every project
+        arrayContributors.push(); // we will also push a empty struct of type contributions of anyone for keeping track of contributions of every project
+
         uint index = projects.length - 1;
        
 
@@ -154,6 +158,7 @@ function startProject(
         // projects[index].img = _img;
         projects[index].uri = _uri;
         projects[index].state = State.Fundraising;
+
         // socials
         // projects[index].links.website = _website;
         // projects[index].links.twitter = _twitter;
@@ -173,12 +178,12 @@ function startProject(
                 )
             )
         );
-
          address nftAddress = address(new FundNFT(name, _uri)); 
          projects[index].NFTaddress = nftAddress;
-    
 
+        emit ProjectStarted(counterProjectID, msg.sender);
         counterProjectID++;
+
 
 
         }
@@ -187,7 +192,7 @@ function startProject(
 
   /**  Function to change the project state depending on conditions.
       */
-    function checkIfFundingCompleteOrExpired(uint _projectId) public {
+    function checkIfFundingCompleteOrExpired(uint _projectId) private {
       // if current balance is more than or equal to the goal, project status should change to succesfull
         if (projects[_projectId].currentBalance >= projects[_projectId].amountGoal) {
             projects[_projectId].state = State.Successful;
@@ -224,7 +229,6 @@ function startProject(
       // now we will add the funds to the current balance of this particular project
            projects[_projectId].currentBalance = projects[_projectId].currentBalance.add(_amount);
      // let's add the contribution record of the contributor of this project 
-           arrayContributors[_projectId].contributions[msg.sender] = arrayContributors[_projectId].contributions[msg.sender].add(_amount);
       // let's emit our event     
            emit FundingReceived(msg.sender, _amount, _projectId);
       // now will will check if the contributor has already funded once or ist it the first time, if this is the first time we will reward him NFT and also increase the number of Contributor count
@@ -239,6 +243,7 @@ function startProject(
           checkIfFundingCompleteOrExpired(_projectId); // we are revoking this function so if after this contribution if the state changes it will update that
 
          }
+        arrayContributors[_projectId].contributions[msg.sender] = arrayContributors[_projectId].contributions[msg.sender].add(_amount);
         return true;
 
     }
@@ -304,7 +309,7 @@ function getDetails(uint _projectId) public view returns (Project memory) {
          projects[_projectId].requests[num].requestEndTime = 7*24*60*60 + block.timestamp;
      // we will now increment number of request (numRequest)
         projects[_projectId].numRequests++;
-        
+        emit WithdrawalRequestCreated(_projectId, num );
 
     }
 
@@ -329,6 +334,8 @@ function getDetails(uint _projectId) public view returns (Project memory) {
         } else {
              return (false);
         }
+
+        
     }
 
 
@@ -339,8 +346,7 @@ function getDetails(uint _projectId) public view returns (Project memory) {
 
         FundNFT(projects[_projectID].NFTaddress).mint(payable(msg.sender));
 
-     
-
+    
     }
 
 
@@ -394,6 +400,10 @@ function getDetails(uint _projectId) public view returns (Project memory) {
 
         if(projects[_projectId].requests[_requestNo].agreeVotes >= projects[_projectId].requests[_requestNo].disagreeVotes && projects[_projectId].requests[_requestNo].requestEndTime <= block.timestamp) {
         projects[_projectId].requests[_requestNo].status = true;
+        sendPayout(_projectId, projects[_projectId].requests[_requestNo].receipient, projects[_projectId].requests[_requestNo].value, _requestNo);    
+        }
+        else if(projects[_projectId].requests[_requestNo].disagreeVotes >= projects[_projectId].requests[_requestNo].agreeVotes && projects[_projectId].requests[_requestNo].requestEndTime <= block.timestamp) {
+        projects[_projectId].requests[_requestNo].status = false;
         sendPayout(_projectId, projects[_projectId].requests[_requestNo].receipient, projects[_projectId].requests[_requestNo].value, _requestNo);    
         }
         

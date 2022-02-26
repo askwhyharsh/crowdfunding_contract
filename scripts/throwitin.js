@@ -24,6 +24,7 @@ async function main() {
   );
 
   await ThrowItIn.deployed();
+console.log('owner', owner.address);
 
   console.log("Crowdfunding project deployed to:", ThrowItIn.address);
   //   console.log("USDC address ", USDC.address);
