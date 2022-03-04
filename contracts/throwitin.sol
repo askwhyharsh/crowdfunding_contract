@@ -63,6 +63,7 @@ usdc = USDC;
 }
 struct Project {
     // State variables
+    uint databaseID;
     uint  projectId; // id of projects/campaigns (start from 0 )
     address payable  creator; // address of the fund raiser
     string  title; // title of the campaign
@@ -98,6 +99,7 @@ struct Request {
         uint agreeVotes;
         uint disagreeVotes;
         uint requestEndTime;
+        State  state;
         
     }
 
@@ -126,17 +128,19 @@ struct Request {
   
 
   // Event that will be emitted whenever funding will be received
-    event FundingReceived(address contributor, uint amount, uint currentTotal);
+    event FundingReceived(uint projectID, uint databaseID, address contributor, uint amount);
     // Event that will be emitted whenever the project request has been fullfilled
-    event CreatorPaid(address recipient);
+    event CreatorPaid(uint projectID, uint databaseID, address recipient);
 
-    event ProjectStarted(uint projectID, address creatorAddress);
-    event WithdrawalRequestCreated(uint projectID, uint RequestID);
+    event ProjectStarted(uint projectID, uint databaseID, address creatorAddress);
+    event WithdrawalRequestCreated(uint projectID, uint databaseID, uint RequestID);
+    event ConfirmVote(uint projectID, uint RequestID, uint DatabaseID, address voter);
+    event RejectVote(uint projectID, uint RequestID, uint DatabaseID, address voter);
 
 function startProject(
         string memory _projectTitle,
         uint _fundRaisingDeadline,
-        uint _goalAmount, string memory _uri ) public {
+        uint _goalAmount, string memory _uri, uint _databaseID ) public {
         require(maxDeadline>= _fundRaisingDeadline , "deadline should be less than max deadline");
 
         projects.push(); // we will first push a empty struct  and then fill the detials
@@ -146,6 +150,7 @@ function startProject(
        
 
         projects[index].projectId = counterProjectID; // project id given in increasing order
+        projects[index].databaseID = _databaseID; // project id given in increasing order
         
         projects[index].creator = payable(address(msg.sender));
         projects[index].title = _projectTitle;
@@ -181,7 +186,7 @@ function startProject(
          address nftAddress = address(new FundNFT(name, _uri)); 
          projects[index].NFTaddress = nftAddress;
 
-        emit ProjectStarted(counterProjectID, msg.sender);
+        emit ProjectStarted(counterProjectID, _databaseID ,msg.sender);
         counterProjectID++;
 
 
@@ -230,7 +235,7 @@ function startProject(
            projects[_projectId].currentBalance = projects[_projectId].currentBalance.add(_amount);
      // let's add the contribution record of the contributor of this project 
       // let's emit our event     
-           emit FundingReceived(msg.sender, _amount, _projectId);
+           emit FundingReceived( _projectId, projects[_projectId].databaseID, msg.sender, _amount);
       // now will will check if the contributor has already funded once or ist it the first time, if this is the first time we will reward him NFT and also increase the number of Contributor count
          if (arrayContributors[_projectId].contributions[msg.sender] == 0) {
          projects[_projectId].noOfContributors++;
@@ -306,10 +311,11 @@ function getDetails(uint _projectId) public view returns (Project memory) {
          projects[_projectId].requests[num].value = _value;
          projects[_projectId].requests[num].receipient = _receipient;
          projects[_projectId].requests[num].requestId = num;
+         projects[_projectId].requests[num].state = State.Fundraising;
          projects[_projectId].requests[num].requestEndTime = 7*24*60*60 + block.timestamp;
      // we will now increment number of request (numRequest)
+        emit WithdrawalRequestCreated(_projectId, projects[_projectId].databaseID, num );
         projects[_projectId].numRequests++;
-        emit WithdrawalRequestCreated(_projectId, num );
 
     }
 
@@ -322,13 +328,13 @@ function getDetails(uint _projectId) public view returns (Project memory) {
          require(thisRequest.agreeVotes >= thisRequest.disagreeVotes, "condition not fullfilled yet");
         // _address.transfer(_value);
         uint amountToTransfer = _value*97/100;
-        uint fee = _value*3/100; // we will take 3% fee on withdrawal 
+        uint fee = _value*2/100; // we will take 2% fee on withdrawal 
          IERC20(usdc).approve(msg.sender, _value);
     if (IERC20(usdc).transferFrom(address(this), msg.sender, amountToTransfer)) {
-            emit CreatorPaid(_address);
             IERC20(usdc).approve(treasury, fee);
             IERC20(usdc).transferFrom(address(this), treasury, fee);
             projects[_projectId].currentBalance = projects[_projectId].currentBalance.sub(_value);
+            emit CreatorPaid(_projectId,_requestNo, _address);
             
             return (true);
         } else {
@@ -358,14 +364,17 @@ function getDetails(uint _projectId) public view returns (Project memory) {
    
         require( projects[_projectId].state == State.Successful, "project expired or successful can't create request");
         require(arrayContributors[_projectId].contributions[msg.sender] > 0, "you must be a contributor to vote");
+        // require(array);
        
         
      // checking if the voter has already voted or not
         require ( arrayContributors[_projectId].voters[_requestNo].vote[msg.sender] == false, "you have already voted");
+        // require(  )
+        
     uint contri = arrayContributors[_projectId].contributions[msg.sender];
     uint callersVote;
-    if(contri <= 1000000*10) {
-        callersVote = 0;
+    if(contri <= 1000000*10 && contri >=  0 ) {
+        callersVote = 1;
     }
     else if( contri <= 1000000*100 && contri >=  1000000*10){
        callersVote = 1;
@@ -391,7 +400,7 @@ function getDetails(uint _projectId) public view returns (Project memory) {
      if(vote == true) {
         projects[_projectId].requests[_requestNo].agreeVotes += callersVote;
      }
-     else if (vote == true) {
+     else if (vote == false) {
          projects[_projectId].requests[_requestNo].disagreeVotes += callersVote; 
      }
       // mark vote of msg.sender to true
@@ -400,11 +409,16 @@ function getDetails(uint _projectId) public view returns (Project memory) {
 
         if(projects[_projectId].requests[_requestNo].agreeVotes >= projects[_projectId].requests[_requestNo].disagreeVotes && projects[_projectId].requests[_requestNo].requestEndTime <= block.timestamp) {
         projects[_projectId].requests[_requestNo].status = true;
+        projects[_projectId].requests[_requestNo].state = State.Successful;
+        emit ConfirmVote(_projectId, _requestNo,  projects[_projectId].databaseID,  msg.sender);
+
         sendPayout(_projectId, projects[_projectId].requests[_requestNo].receipient, projects[_projectId].requests[_requestNo].value, _requestNo);    
         }
         else if(projects[_projectId].requests[_requestNo].disagreeVotes >= projects[_projectId].requests[_requestNo].agreeVotes && projects[_projectId].requests[_requestNo].requestEndTime <= block.timestamp) {
         projects[_projectId].requests[_requestNo].status = false;
-        sendPayout(_projectId, projects[_projectId].requests[_requestNo].receipient, projects[_projectId].requests[_requestNo].value, _requestNo);    
+        projects[_projectId].requests[_requestNo].state = State.Expired;
+
+        emit RejectVote(_projectId, _requestNo,  projects[_projectId].databaseID,  msg.sender);
         }
         
     }
