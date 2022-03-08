@@ -128,14 +128,33 @@ struct Request {
   
 
   // Event that will be emitted whenever funding will be received
-    event FundingReceived(uint projectID, uint databaseID, address contributor, uint amount);
+    event FundingReceived(uint projectID, uint databaseID, address contributor, uint amount, State state);
     // Event that will be emitted whenever the project request has been fullfilled
     event CreatorPaid(uint projectID, uint databaseID, address recipient);
 
-    event ProjectStarted(uint projectID, uint databaseID, address creatorAddress);
-    event WithdrawalRequestCreated(uint projectID, uint databaseID, uint RequestID);
+    event ProjectStarted(uint projectID, uint databaseID, address creatorAddress, string  title, uint  amountGoal, uint  currentBalance, uint  deadline, string uri,State  state, uint noOfContributors, uint  numRequests, address NFTaddress );
+    event WithdrawalRequestCreated(uint projectID, uint databaseID, uint RequestID, string desc,  uint value, address receipient,   bool status, uint requestEndTime);
     event ConfirmVote(uint projectID, uint RequestID, uint DatabaseID, address voter);
     event RejectVote(uint projectID, uint RequestID, uint DatabaseID, address voter);
+
+//      // State variables
+// uint databaseID;
+//     uint  projectId; // id of projects/campaigns (start from 0 )
+//     address payable  creator; // address of the fund raiser
+//     string  title; // title of the campaign
+//     // string  description; // description of the campaign
+//     uint  amountGoal; // required to reach at least this much, else everyone gets refund
+//     uint  currentBalance; // the current balance of the project or the fund raised balance 
+//     uint  deadline; // the     deadline till when project should get succesful - (in unix time)
+//     // string  location; // Location of the creator/ fund raiser
+//     // string  category; // category of the campaign
+//     // string img; // the cover img of the campaign (ipfs link)
+//     string uri; // nft uri that contributors will get
+//     State  state; // initialize on create with  state = State.Fundraising;
+//     uint noOfContributors; // total contributors of the campaign / project
+//     Request[] requests; // total withdrawal requests created by the fund raiser
+//     uint  numRequests; // Number of requests of withdrawal created by fund raiser
+//     address NFTaddress;
 
 function startProject(
         string memory _projectTitle,
@@ -185,8 +204,9 @@ function startProject(
         );
          address nftAddress = address(new FundNFT(name, _uri)); 
          projects[index].NFTaddress = nftAddress;
+            //  event ProjectStarted(uint projectID, uint databaseID, address creatorAddress, string  title, uint  amountGoal, uint  currentBalance, uint  deadline, string uri,State  state, uint noOfContributors, uint  numRequests, address NFTaddress );
 
-        emit ProjectStarted(counterProjectID, _databaseID ,msg.sender);
+        emit ProjectStarted(counterProjectID, _databaseID ,msg.sender, _projectTitle, _goalAmount, 0 , projects[index].deadline, _uri,  State.Fundraising, 0, 0, projects[index].NFTaddress );
         counterProjectID++;
 
 
@@ -235,19 +255,22 @@ function startProject(
            projects[_projectId].currentBalance = projects[_projectId].currentBalance.add(_amount);
      // let's add the contribution record of the contributor of this project 
       // let's emit our event     
-           emit FundingReceived( _projectId, projects[_projectId].databaseID, msg.sender, _amount);
+           emit FundingReceived( _projectId, projects[_projectId].databaseID, msg.sender, _amount, projects[_projectId].state);
       // now will will check if the contributor has already funded once or ist it the first time, if this is the first time we will reward him NFT and also increase the number of Contributor count
          if (arrayContributors[_projectId].contributions[msg.sender] == 0) {
          projects[_projectId].noOfContributors++;
         // we will write the FundNFT contract in the end, but here we will have to pass the address of the contributor and the URI of the NFT to reward for contributing
         // new FundNFT( payable (address (msg.sender)), "https://gateway.pinata.cloud/ipfs/QmUa2KQr7xmuFA9VCMLKbGFDBGwXnEroHxoFNVahs49HtQ"); 
-         checkIfFundingCompleteOrExpired(_projectId);  // we are revoking this function so if after this contribution if the state changes it will update that
+         
+           // we are revoking this function so if after this contribution if the state changes it will update that
         }
          else {
          
-          checkIfFundingCompleteOrExpired(_projectId); // we are revoking this function so if after this contribution if the state changes it will update that
+          // we are revoking this function so if after this contribution if the state changes it will update that
 
          }
+          checkIfFundingCompleteOrExpired(_projectId);
+          emit FundingReceived( _projectId, projects[_projectId].databaseID, msg.sender, _amount, projects[_projectId].state);
         arrayContributors[_projectId].contributions[msg.sender] = arrayContributors[_projectId].contributions[msg.sender].add(_amount);
         return true;
 
@@ -312,10 +335,11 @@ function getDetails(uint _projectId) public view returns (Project memory) {
          projects[_projectId].requests[num].receipient = _receipient;
          projects[_projectId].requests[num].requestId = num;
          projects[_projectId].requests[num].state = State.Fundraising;
-         projects[_projectId].requests[num].requestEndTime = 7*24*60*60 + block.timestamp;
+         projects[_projectId].requests[num].requestEndTime = 7*24*3600 + block.timestamp;
      // we will now increment number of request (numRequest)
-        emit WithdrawalRequestCreated(_projectId, projects[_projectId].databaseID, num );
-        projects[_projectId].numRequests++;
+        //  event WithdrawalRequestCreated(uint projectID, uint databaseID, uint RequestID, string desc,  uint value, address receipient,   bool status, uint requestEndTime);
+
+        emit WithdrawalRequestCreated(_projectId, projects[_projectId].databaseID, num , _desc, _value, _receipient, false, projects[_projectId].requests[num].requestEndTime);
 
     }
 

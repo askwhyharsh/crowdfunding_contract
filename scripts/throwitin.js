@@ -16,6 +16,7 @@ async function main() {
 
   // await USDC.deployed();
 
+  console.log('owner', owner.address);
   const throwitincontract = await hre.ethers.getContractFactory("throwitin");
   const ThrowItIn = await throwitincontract.deploy(
     50,
@@ -24,7 +25,6 @@ async function main() {
   );
 
   await ThrowItIn.deployed();
-console.log('owner', owner.address);
 
   console.log("Crowdfunding project deployed to:", ThrowItIn.address);
   //   console.log("USDC address ", USDC.address);
